@@ -10,17 +10,15 @@ from tensorflow.keras.models import load_model
 
 st.set_page_config(
     page_title="Brain Tumor AI Classifier",
-    page_icon="MRI",
     layout="wide"
 )
 
 
 # ============================================================
-# MODEL SETTINGS
+# SETTINGS
 # ============================================================
 
 MODEL_PATH = "brain_tumor_rnn.keras"
-
 IMG_SIZE = 64
 
 
@@ -28,8 +26,8 @@ IMG_SIZE = 64
 # CLASS NAMES
 # ============================================================
 # IMPORTANT:
-# Replace these with the EXACT class names and order
-# that you used while training your RNN model.
+# Put your actual class names here in the SAME ORDER
+# used during model training.
 
 class_names = [
     "Class 0",
@@ -49,34 +47,31 @@ def load_brain_model():
 
 
 try:
-
     model = load_brain_model()
 
 except Exception as e:
 
-    st.error(
-        "The brain tumor model could not be loaded."
+    st.error("Unable to load the model.")
+
+    st.write(
+        "Make sure the model file is present in your "
+        "GitHub repository:"
     )
 
-    st.info(
-        "Make sure the file 'brain_tumor_rnn.keras' "
-        "is uploaded to the same GitHub repository as app.py."
-    )
+    st.code(MODEL_PATH)
 
     st.stop()
 
 
 # ============================================================
-# TITLE
+# HEADER
 # ============================================================
 
 st.title("Brain Tumor AI Classifier")
 
-st.write(
-    "RNN-based deep learning application for "
-    "brain image classification."
+st.caption(
+    "RNN-based deep learning application for brain image classification"
 )
-
 
 st.divider()
 
@@ -87,39 +82,30 @@ st.divider()
 
 st.subheader("Model Information")
 
-
 col1, col2, col3, col4 = st.columns(4)
 
-
 with col1:
-
     st.metric(
-        label="Model",
-        value="RNN"
+        "Model",
+        "RNN"
     )
-
 
 with col2:
-
     st.metric(
-        label="Image Size",
-        value="64 x 64"
+        "Image Size",
+        "64 x 64"
     )
-
 
 with col3:
-
     st.metric(
-        label="Input Shape",
-        value="64 x 192"
+        "RNN Input",
+        "64 x 192"
     )
 
-
 with col4:
-
     st.metric(
-        label="Task",
-        value="Classification"
+        "Task",
+        "Classification"
     )
 
 
@@ -127,30 +113,25 @@ st.divider()
 
 
 # ============================================================
-# IMAGE UPLOAD
+# UPLOAD IMAGE
 # ============================================================
 
 st.subheader("Upload Brain Image")
 
 uploaded_file = st.file_uploader(
-    "Choose a brain image",
-    type=[
-        "jpg",
-        "jpeg",
-        "png",
-        "webp"
-    ]
+    "Choose an image",
+    type=["jpg", "jpeg", "png", "webp"]
 )
 
 
 # ============================================================
-# PREDICTION
+# WHEN IMAGE IS UPLOADED
 # ============================================================
 
 if uploaded_file is not None:
 
     # --------------------------------------------------------
-    # LOAD IMAGE
+    # OPEN IMAGE
     # --------------------------------------------------------
 
     original_image = Image.open(
@@ -177,7 +158,7 @@ if uploaded_file is not None:
         )
 
         st.caption(
-            "Original image size: "
+            "Original image: "
             + str(original_image.width)
             + " x "
             + str(original_image.height)
@@ -185,20 +166,20 @@ if uploaded_file is not None:
 
 
     # --------------------------------------------------------
-    # PREPROCESSING
+    # PREPROCESS IMAGE
     # --------------------------------------------------------
 
-    img = original_image.resize(
+    resized_image = original_image.resize(
         (IMG_SIZE, IMG_SIZE)
     )
 
 
     img_array = np.array(
-        img
+        resized_image
     ).astype("float32")
 
 
-    # Normalize
+    # Normalize pixel values
     img_array = img_array / 255.0
 
 
@@ -210,27 +191,27 @@ if uploaded_file is not None:
 
 
     # --------------------------------------------------------
-    # RNN INPUT SHAPE
+    # RESHAPE FOR RNN
     # --------------------------------------------------------
     #
-    # Image:
+    # Original:
     # 64 x 64 x 3
     #
-    # Reshape:
+    # RNN input:
     # 1 x 64 x 192
     #
-    # This matches your original prediction code.
+    # 64 x (64 x 3) = 64 x 192
     # --------------------------------------------------------
 
     img_array = img_array.reshape(
         1,
         64,
-        64 * 3
+        192
     )
 
 
     # --------------------------------------------------------
-    # PREDICTION
+    # MODEL PREDICTION
     # --------------------------------------------------------
 
     with st.spinner("Analyzing image..."):
@@ -242,11 +223,11 @@ if uploaded_file is not None:
 
 
     # --------------------------------------------------------
-    # PREDICTED CLASS
+    # GET PREDICTION
     # --------------------------------------------------------
 
-    predicted_index = np.argmax(
-        prediction[0]
+    predicted_index = int(
+        np.argmax(prediction[0])
     )
 
 
@@ -255,64 +236,173 @@ if uploaded_file is not None:
     ]
 
 
-    confidence = (
+    confidence = float(
         prediction[0][predicted_index]
-        * 100
     )
 
 
     # --------------------------------------------------------
-    # RESULT
+    # DISPLAY RESULT
     # --------------------------------------------------------
 
     with result_col:
 
         st.subheader("AI Prediction")
 
-
         st.success(
             "Predicted Class: "
             + predicted_class
         )
 
-
         st.metric(
-            label="Confidence",
-            value=f"{confidence:.2f}%"
+            "Confidence",
+            f"{confidence * 100:.2f}%"
         )
 
-
         st.progress(
-            float(
-                prediction[0][predicted_index]
-            )
+            confidence
         )
 
 
         # ----------------------------------------------------
-        # ALL CLASS PROBABILITIES
+        # CLASS PROBABILITIES
         # ----------------------------------------------------
 
         st.write("### Class Probabilities")
 
 
-        for i, class_name in enumerate(
-            class_names
-        ):
+        for i in range(len(class_names)):
 
-            probability = (
+            probability = float(
                 prediction[0][i]
-                * 100
             )
 
 
             st.write(
-                f"**{class_name}**: "
-                f"{probability:.2f}%"
+                f"**{class_names[i]}**: "
+                f"{probability * 100:.2f}%"
             )
 
 
             st.progress(
-                float(
-                    prediction[0]
+                probability
+            )
 
+
+    # ========================================================
+    # IMAGE PROCESSING INFORMATION
+    # ========================================================
+
+    st.divider()
+
+    st.subheader("Image Processing")
+
+    process1, process2, process3 = st.columns(3)
+
+
+    with process1:
+
+        st.info(
+            "Original Image\n\n"
+            + str(original_image.width)
+            + " x "
+            + str(original_image.height)
+        )
+
+
+    with process2:
+
+        st.info(
+            "Resized Image\n\n"
+            "64 x 64"
+        )
+
+
+    with process3:
+
+        st.info(
+            "RNN Input Shape\n\n"
+            "1 x 64 x 192"
+        )
+
+
+# ============================================================
+# PROJECT INFORMATION
+# ============================================================
+
+st.divider()
+
+st.subheader("About the Project")
+
+st.write(
+    "This project uses a Recurrent Neural Network (RNN) "
+    "for brain image classification."
+)
+
+st.write(
+    "The uploaded image is resized to 64 x 64 pixels, "
+    "normalized between 0 and 1, and reshaped into "
+    "the input format required by the trained RNN model."
+)
+
+
+# ============================================================
+# WORKFLOW
+# ============================================================
+
+st.subheader("Prediction Workflow")
+
+step1, step2, step3, step4 = st.columns(4)
+
+
+with step1:
+
+    st.write("**1. Upload**")
+
+    st.caption(
+        "Select a brain image."
+    )
+
+
+with step2:
+
+    st.write("**2. Preprocess**")
+
+    st.caption(
+        "Resize and normalize the image."
+    )
+
+
+with step3:
+
+    st.write("**3. RNN Analysis**")
+
+    st.caption(
+        "The trained model analyzes the image."
+    )
+
+
+with step4:
+
+    st.write("**4. Prediction**")
+
+    st.caption(
+        "Class and confidence are displayed."
+    )
+
+
+# ============================================================
+# DISCLAIMER
+# ============================================================
+
+st.divider()
+
+st.caption(
+    "This application is for educational and research purposes "
+    "and should not be considered a medical diagnosis."
+)
+
+
+st.caption(
+    "Brain Tumor AI Classifier | RNN Deep Learning Project"
+)
