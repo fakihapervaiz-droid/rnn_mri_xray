@@ -1,4 +1,3 @@
-```python
 import streamlit as st
 import numpy as np
 from PIL import Image
@@ -316,4 +315,4 @@ if uploaded_file is not None:
             st.progress(
                 float(
                     prediction[0]
-```
+
